@@ -1,33 +1,24 @@
-from sqlalchemy import Column, String, Float, Integer, Enum
-from sqlalchemy.ext.declarative import declarative_base
-import enum
-from pydantic import BaseModel
-import decimal
+from sqlalchemy import Column, Float, Integer, Enum, TIMESTAMP
+from models.base import Base
+from sqlalchemy.types import TypeDecorator
 
-# Определение базового класса для моделей SQLAlchemy
-Base = declarative_base()
+class EventStateEnum(TypeDecorator):
+    impl = Enum('0', '1', '2', name='eventstate')
 
-class EventState(enum.Enum):
-    NEW = "new"
-    FINISHED_WIN = "finished_win"
-    FINISHED_LOSE = "finished_lose"
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return str(value)
+        return None
 
-# SQLAlchemy модель для таблицы Event
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return int(value)
+        return None
+
 class Event(Base):
     __tablename__ = "events"
 
     id = Column(Integer, primary_key=True, index=True)
-    event_id = Column(String, unique=True, index=True)
     coefficient = Column(Float)
-    deadline = Column(Integer)
-    state = Column(Enum(EventState))
-
-# Pydantic модель для валидации данных
-class EventCreate(BaseModel):
-    event_id: str
-    coefficient: decimal.Decimal
-    deadline: int
-    state: EventState
-
-    class Config:
-        orm_mode = True
+    deadline = Column(TIMESTAMP(timezone=True))  # Используем TIMESTAMP WITH TIME ZONE для дедлайна
+    state = Column(EventStateEnum)

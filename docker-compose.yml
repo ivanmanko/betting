@@ -1,42 +1,90 @@
-version: '3.7'
+version: '3.8'
 
 services:
-  postgres:
+  bet_maker:
+    env_file:
+      - .env
+    build:
+      context: ./bet_maker
+    command: >
+      /bin/sh -c "
+      alembic upgrade head &&
+      uvicorn main:app --host 0.0.0.0 --port 8081"
+    volumes:
+      - ./bet_maker:/app
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres_bet_maker
+    networks:
+      - app_network
+
+  line_provider:
+    env_file:
+      - .env
+    build:
+      context: ./line_provider
+    command: >
+      /bin/sh -c "
+      alembic upgrade head &&
+      uvicorn main:app --host 0.0.0.0 --port 8080"
+    volumes:
+      - ./line_provider:/app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres_line_provider
+    networks:
+      - app_network
+
+  celery_worker:
+    env_file:
+      - .env
+    build:
+      context: ./celery_worker
+    command: celery -A app.celery_app worker --loglevel=info --beat
+    volumes:
+      - ./celery_worker:/app
+    depends_on:
+      - redis
+      - line_provider
+      - bet_maker
+    networks:
+      - app_network
+
+  postgres_bet_maker:
     image: postgres:13
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: line_provider_db
+      POSTGRES_USER: ${POSTGRES_BET_MAKER_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_BET_MAKER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_BET_MAKER_DB}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./bet_maker/init_db/init-bet_maker.sql:/docker-entrypoint-initdb.d/init-bet_maker.sql
+    networks:
+      - app_network
 
-  rabbitmq:
-    image: "rabbitmq:3-management"
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
-  line-provider:
-    build: ./line-provider
+  postgres_line_provider:
+    image: postgres:13
     environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@postgres/line_provider_db
+      POSTGRES_USER: ${POSTGRES_LINE_PROVIDER_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_LINE_PROVIDER_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_LINE_PROVIDER_DB}
     ports:
-      - "8081:8080"
-    depends_on:
-      - postgres
-      - rabbitmq
+      - "5433:5432"
+    volumes:
+      - ./line_provider/init_db/init-line_provider.sql:/docker-entrypoint-initdb.d/init-line_provider.sql
+    networks:
+      - app_network
 
-  bet-maker:
-    build: ./bet-maker
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://user:password@postgres/bet_maker_db
+  redis:
+    image: redis:6
     ports:
-      - "8082:8080"
-    depends_on:
-      - postgres
-      - rabbitmq
+      - "6379:6379"
+    networks:
+      - app_network
 
-volumes:
-  postgres_data:
+networks:
+  app_network:
+    driver: bridge

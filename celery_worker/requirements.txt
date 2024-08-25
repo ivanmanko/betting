@@ -1,0 +1,6 @@
+celery
+redis
+pydantic
+requests
+pydantic-settings
+pytz

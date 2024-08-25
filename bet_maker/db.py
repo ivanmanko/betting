@@ -1,34 +1,39 @@
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy import Column, String, Float, Enum, Integer
-import enum
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_scoped_session, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
+from asyncio import current_task
+from config import settings
 
-DATABASE_URL = "postgresql+asyncpg://user:password@postgres/bet_maker_db"
+class DatabaseHelper:
+    def __init__(self, url: str, echo: bool = False):
+        self.engine = create_async_engine(
+            url=url,
+            echo=echo,
+        )
+        self.session_factory = async_sessionmaker(
+            bind=self.engine,
+            autoflush=False,
+            autocommit=False,
+            expire_on_commit=False,
+        )
 
-engine = create_async_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, class_=AsyncSession)
+    def get_scoped_session(self):
+        session = async_scoped_session(
+            session_factory=self.session_factory,
+            scopefunc=current_task,
+        )
+        return session
 
-# Определение модели для базы данных
-Base = declarative_base()
+    async def session_dependency(self) -> AsyncSession:
+        async with self.session_factory() as session:
+            yield session
+            await session.close()
 
-
-class BetStatus(enum.Enum):
-    PENDING = "pending"
-    WIN = "win"
-    LOSE = "lose"
-
-
-class Bet(Base):
-    __tablename__ = "bets"
-
-    id = Column(Integer, primary_key=True, index=True)
-    bet_id = Column(String, unique=True, index=True)
-    event_id = Column(String, index=True)
-    amount = Column(Float)
-    status = Column(Enum(BetStatus))
-
-
-# Функция для получения сессии базы данных
-async def get_db_session() -> AsyncSession:
-    async with SessionLocal() as session:
+    async def scoped_session_dependency(self) -> AsyncSession:
+        session = self.get_scoped_session()
         yield session
+        await session.close()
+
+db_helper = DatabaseHelper(
+    url=settings.db.async_url,
+    echo=settings.database_echo,
+)
