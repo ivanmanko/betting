@@ -44,28 +44,37 @@ To run the service in Docker, follow these steps:
 
    Example `.env` file:
    ```env
-   # Database settings for bet_maker
-   POSTGRES_BET_MAKER_USER=bet_maker_user
-   POSTGRES_BET_MAKER_PASSWORD=bet_maker_password
-   POSTGRES_BET_MAKER_DB=bet_maker_db
-   POSTGRES_BET_MAKER_HOST=postgres_bet_maker
-   POSTGRES_BET_MAKER_PORT=5432
+# Database settings for bet_maker
+POSTGRES_BET_MAKER_USER=bet_maker_user
+POSTGRES_BET_MAKER_PASSWORD=bet_maker_password
+POSTGRES_BET_MAKER_DB=bet_maker_db
+POSTGRES_BET_MAKER_HOST=postgres_bet_maker
+POSTGRES_BET_MAKER_PORT=5432
 
-   # Database settings for line_provider
-   POSTGRES_LINE_PROVIDER_USER=line_provider_user
-   POSTGRES_LINE_PROVIDER_PASSWORD=line_provider_password
-   POSTGRES_LINE_PROVIDER_DB=line_provider_db
-   POSTGRES_LINE_PROVIDER_HOST=postgres_line_provider
-   POSTGRES_LINE_PROVIDER_PORT=5432
+# Database settings for line_provider
+POSTGRES_LINE_PROVIDER_USER=line_provider_user
+POSTGRES_LINE_PROVIDER_PASSWORD=line_provider_password
+POSTGRES_LINE_PROVIDER_DB=line_provider_db
+POSTGRES_LINE_PROVIDER_HOST=postgres_line_provider
+POSTGRES_LINE_PROVIDER_PORT=5432
 
-   # Settings for celery_worker
-   CELERY_WORKER_LINE_PROVIDER_HOST=line_provider
-   CELERY_WORKER_LINE_PROVIDER_PORT=8080
-   CELERY_WORKER_BET_MAKER_HOST=bet_maker
-   CELERY_WORKER_BET_MAKER_PORT=8081
-   CELERY_WORKER_REDIS_HOST=redis
-   CELERY_WORKER_REDIS_PORT=6379
-   CELERY_WORKER_REDIS_DB=1
+# Settings for celery_worker
+CELERY_WORKER_LINE_PROVIDER_HOST=line_provider
+CELERY_WORKER_LINE_PROVIDER_PORT=8080
+CELERY_WORKER_BET_MAKER_HOST=bet_maker
+CELERY_WORKER_BET_MAKER_PORT=8081
+CELERY_WORKER_REDIS_HOST=redis
+CELERY_WORKER_REDIS_PORT=6379
+CELERY_WORKER_REDIS_DB=1
+
+# Settings for the line_provider service
+LINE_PROVIDER_HOST=localhost
+LINE_PROVIDER_PORT=8080
+
+# Settings for the bet_maker service
+BET_MAKER_HOST=localhost
+BET_MAKER_PORT=8081
+
    ```
 
 2. **Run Docker Compose:**
